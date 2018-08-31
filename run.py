@@ -39,6 +39,8 @@ if __name__ == "__main__":
     num_products = len(products)
 
     # get clean, non-duplicated listing titles
+    # @todo parse makes products['model'].lower() & ['manufacturer'].lower()
+    # @todo make lists of sanitized text in the below method
     sanitized_listings = sanitize_listings_by_language(
                                     listings=listings,
                                     english_currencies=ENGLISH_CURRENCIES)
@@ -75,11 +77,11 @@ if __name__ == "__main__":
     results = {}
     product_matches = 0
     for i, p in enumerate(products):
-        product_model = p['model'].lower()
-        manufacturer = p['manufacturer'].lower()
         for c in clusters:
-            if product_model in clusters[c] and manufacturer in clusters[c]:
-                results[i] = {'product' : p,
+            if p['model'].lower() in clusters[c] and \
+               p['manufacturer'].lower() in clusters[c]:
+                assert(c not in results)
+                results[c] = {'product' : p,
                               'cluster' : clusters.pop(c),
                               'listings' : []}
                 product_matches += 1
@@ -87,8 +89,9 @@ if __name__ == "__main__":
 
     # inject listings into the result dict by cluster #
     listing_matches = 0
-    for l,p in zip(listings, predictions):
-        if p in results:
+    for i, (l, p) in enumerate(zip(listings, predictions)):
+        if p in results and \
+           results[p]['product']['model'].lower() in l['sanitized_text']:
             l.pop('sanitized_text') # we don't want this in the results.txt
             results[p]['listings'].append(l)
             listing_matches += 1
