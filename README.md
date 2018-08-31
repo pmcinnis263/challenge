@@ -32,8 +32,21 @@ There are `20196` listings and `743` known products in the provided dataset.
 		 "listings": list(Listings) }
 
 #### Caveats
-* some listings will contain the titles of other listings ex: tripods/cases listing camera compatibility
+* some listings will contain the titles of other listings ex: tripods/cases/batteries, which also includes a list of compatible cameras
 * prices are in multiple currencies, across multiple dates
+* `family` keyword is not always in `Product`
+* similar products may have numerical ratings that are slightly different ex: `3.2mp` vs `3mp`
+* listings are in different languages
+	* 67% of `Listings` (`13454`)  appear to be in english language
+	* 33% of `Listings` (`6742`) appear to be in foreign languages
+	* *I don't think I can fit a `sklearn` KMeans text-clustering model to multiple languages easily*
+* many product names are very similar:
+
+		 'Fujifilm_FinePix_S200EXR',
+		 'Fujifilm_FinePix_S2500HD',
+		 'Fujifilm_FinePix_S2600HD',
+		 'Fujifilm_FinePix_S2800HD',
+		 'Fujifilm_FinePix_S2900HD',
 		
 #### Research / Thoughts
 * According to the [sklearn algorithm cheatsheet](http://scikit-learn.org/stable/tutorial/machine_learning_map/index.html), this problem fits into the path of categorization --> un-labelled data --> known # categories --> >10k samples which means I should probably try using [`KMeans`](http://scikit-learn.org/stable/modules/clustering.html#k-means) clustering.

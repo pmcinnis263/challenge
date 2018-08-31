@@ -5,11 +5,15 @@ This python program attempts to match products to listings
 """
 
 import argparse
+import json
 import os
 import sys
 
-from source.parse import parse_json
-from source.cluster import k_means_cluster_listing_titles
+from source.cluster import k_means_cluster
+from source.parse import parse_json, sanitize_listings_by_language
+#from source.
+
+ENGLISH_CURRENCIES=['USD', 'CAD', 'GBP']
 
 if __name__ == "__main__":
 
@@ -21,6 +25,10 @@ if __name__ == "__main__":
         help='input listings.txt', default=os.path.join('data','listings.txt'))
     parser.add_argument('-o', dest='results', type=str, required=False,
         help='output results.txt', default=os.path.join('output','results.txt'))
+    parser.add_argument("--cached", dest='cache', required=False,
+        help='use cached model', action='store_true')
+    parser.add_argument("--debug", dest='debug', required=False,
+        help='show debug messages', action='store_true')
     args = vars(parser.parse_args(sys.argv[1:]))
 
     # parse the files to lists of dictionaries
@@ -30,16 +38,69 @@ if __name__ == "__main__":
     # the number of products is the known number of clusters
     num_products = len(products)
 
+    # get clean, non-duplicated listing titles
+    sanitized_listings = sanitize_listings_by_language(
+                                    listings=listings,
+                                    english_currencies=ENGLISH_CURRENCIES)
+
+    # sort the listings by language so that KMeans is more accurate
+    english_titles = [l['sanitized_text'] for l in sanitized_listings['english']]
+    foreign_titles = [l['sanitized_text'] for l in sanitized_listings['foreign']]
+    all_titles = []
+    all_titles.extend(english_titles)
+    all_titles.extend(foreign_titles)
+
+    assert(len(english_titles) > 10000), \
+        "KMeans fit solution is not recommended for less that 10k data points"
+
     # perform Kmeans clustering of the listing titles
-    centroids, terms = clustered_listings = k_means_cluster_listing_titles(
-                                                    listings=listings,
-                                                    num_products=num_products)
+    kmc = k_means_cluster(num_clusters=num_products, language='english')
+    if args['cache']:
+        kmc.load('model.pkl')
+    else:
+        kmc.fit(list_of_text=english_titles, max_iter=1000)
+        kmc.save('model.pkl')
 
-    # print top 5 words in each product listing cluster
-    for i in range(num_products):
-        print("Cluster %d:" % i),
-        for ind in centroids[i, :5]:
-            print(' %s' % terms[ind]),
-        print
+    # print the first 5 clusters and all associated listings (debug)
+    if args['debug']:
+        kmc.predict_and_print_clusters(list_of_text=all_titles)
 
-    import pdb; pdb.set_trace()
+    # get predictions for all the titles, with associated top keywords
+    predictions = kmc.predict(list_of_text=all_titles)
+    clusters = kmc.get_top_cluster_keywords(predictions=predictions)
+
+    # @todo filter cost outliers from clusters
+
+    # match the word clusters to products
+    results = {}
+    product_matches = 0
+    for i, p in enumerate(products):
+        product_model = p['model'].lower()
+        manufacturer = p['manufacturer'].lower()
+        for c in clusters:
+            if product_model in clusters[c] and manufacturer in clusters[c]:
+                results[i] = {'product' : p,
+                              'cluster' : clusters.pop(c),
+                              'listings' : []}
+                product_matches += 1
+                break
+
+    # inject listings into the result dict by cluster #
+    listing_matches = 0
+    for l,p in zip(listings, predictions):
+        if p in results:
+            l.pop('sanitized_text') # we don't want this in the results.txt
+            results[p]['listings'].append(l)
+            listing_matches += 1
+
+    print ("matched {0:.1f}% of clusters to products\n"\
+           "matched {1:.1f}% of listings to products".format(
+            product_matches/len(products) * 100,
+            listing_matches/len(listings) * 100))
+
+    # finally, match the listings to the word clusters by using their predictions
+    with open(os.path.join('output','results.txt'), 'wt') as outf:
+        for r in results:
+            outf.write(json.dumps({
+                "product_name": results[r]['product']['product_name'],
+                "listings": results[r]['listings']}) + "\n")
