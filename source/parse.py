@@ -163,7 +163,7 @@ def writeout_results(results, results_output_path,
 
     print("\033[91munable to match {0} listings to a product manufacturer\n"
           "unable to match {1} listings to a product manufacturer & model"
-          " model\nremoved {2} matched, cost-outlier listings\033[0m".format(
+          "\nremoved {2} matched, cost-outlier listings\033[0m".format(
             len(unmatched), unmatched_models, len(outlier_listings)))
 
     # finally, write out the results dict in the format specified

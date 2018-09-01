@@ -76,6 +76,7 @@ if __name__ == "__main__":
 
     # remove listings with outlier costs
     outlier_listings = cost_filter(products_hash=product_hash,
+                                   base_currency=BASE_CURRENCY,
                                    n_stdevs=args['stdev'])
 
     # print out some metrics

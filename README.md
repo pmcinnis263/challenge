@@ -70,9 +70,9 @@ Because the `product` data contains strings that should be explicitly present in
 * has many edge-cases in the formation of the product hash
 * requires more assertions to function 
 	
-#####Performance
+##### Performance
 * the hashing approach matches `98%` of products to `82%` listings with `-s 2` standard deviations for cost outliers and with `--strict` rules. 
-* runs in well-under 10 seconds on an 8-core machine
+* runs in well-under 5 seconds on an 8-core machine
 
 ---
 
