@@ -1,0 +1,2 @@
+CurrencyConverter==0.13.6
+arrow==0.12.1

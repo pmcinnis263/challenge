@@ -11,7 +11,7 @@ def match_listings(product_hash, listings, strict=False):
     - listings not matched to manufacturer are returned as as 'unknown'
     - listings not matched to a manufacturer & model are keyed by 'unknown'
 
-    returns populated product hash dict()
+    populates the product hash dict() in-place
     """
 
     for manu in product_hash:
@@ -61,7 +61,5 @@ def match_listings(product_hash, listings, strict=False):
     # the remaining listings are of unknown manufacturer
     product_hash['unknown'] = {'listings': listings}
 
-    # remove modified listings object
+    # remove modified listings object since we store it inside product hash
     del listings
-
-    return product_hash

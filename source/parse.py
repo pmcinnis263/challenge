@@ -20,9 +20,11 @@ def sanitize(i):
     return i.lower().translate(REMOVE_PUNCTUATION)
 
 
-def parse_json(file_path, sanitize_keys=[]):
+def parse_json(file_path, sanitize_keys=[], convert_keys=[]):
     """Parses listings file, which is one json object per line
     keys in loaded json are sanitized if passed to 'sanitize_keys'
+    convert_keys maps keys : types i.e 'str' for type conversion
+        ... format is [ (key1, type1), (key2, type2), .. ]
     """
 
     # assert file exists
@@ -43,6 +45,13 @@ def parse_json(file_path, sanitize_keys=[]):
                     "cannot sanitize".format(k, file_path)
                 json_line['sanitized'][k] = sanitize(json_line[k])
 
+        # convert types key1 : str(), key2 : int(), etc...
+        if convert_keys:
+            for k, ty in convert_keys:
+                assert(k in json_line), "{0} not found in {1}, "\
+                    "cannot sanitize".format(k, file_path)
+                json_line[k] = ty(json_line[k])
+
         list_of_json.append(json_line)
 
     return list_of_json
@@ -52,7 +61,7 @@ def hash_products(products, strict=False, min_model_len=2, min_manu_len=2):
     """hash products into a dict() keyed by manufacturer -> model
     - from a list of json objects read from parse_json, try to parse products
     into clean manufacturer and model names for hashing
-    - passing strict will disallow using 'family' names to make model #'s
+    - passing strict will disallow using 'family' names to make a valid model
     - rejects model names less than min_model_len
     - rejects manufacturer names less thatn min_manu_len
     - rejected products are returned as a list of unhashed_products
@@ -113,10 +122,12 @@ def hash_products(products, strict=False, min_model_len=2, min_manu_len=2):
 
 def writeout_results(results, results_output_path,
                      unhashed_products, unhashed_products_json_path,
+                     outlier_listings, outlier_listings_json_path,
                      unmatched_listing_json_path):
     """save a hashed result dict() into results format file
     - dumps unhashed products list() to unhashed_products_json_path
     - dumps un-matched listings in results to unmatched_listing_json_path
+    - dumps cost outlier listings to outlier_listings_json_path
     """
 
     # write out un-hashed products to a json
@@ -127,11 +138,10 @@ def writeout_results(results, results_output_path,
                   indent=4, ensure_ascii=False)
 
     # dump listings for which the listing could not be matched to a product
-    unmatched_manufacturers, unmatched_models = 0, 0
+    unmatched_models = 0
 
     if 'unknown' in results:
         unmatched = results.pop('unknown')['listings']
-        unmatched_manufacturers = len(unmatched)
 
     for manu in results:
         if 'unknown' in results[manu]:
@@ -142,9 +152,15 @@ def writeout_results(results, results_output_path,
         json.dump(unmatched, open(unmatched_listing_json_path, 'w'),
                   indent=4, ensure_ascii=False)
 
+    # dump listings which are cost outliers
+    if outlier_listings:
+        json.dump(outlier_listings, open(outlier_listings_json_path, 'w'),
+                  indent=4, ensure_ascii=False)
+
     print("\033[91munable to match {0} listings to a product manufacturer\n"
           "unable to match {1} listings to a product manufacturer & model"
-          " model\033[0m".format(unmatched_manufacturers, unmatched_models))
+          " model\nremoved {2} matched, cost-outlier listings\033[0m".format(
+            len(unmatched), unmatched_models, len(outlier_listings)))
 
     # finally, write out the results dict in the format specified
     with open(results_output_path, 'wt') as outf:

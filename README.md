@@ -3,10 +3,18 @@
 Task details on challenge [blog post](https://www.sortable.com/coding-challenge).
 
 ## Run the Solution
-`python3 run.py`
 
-* `python3` is required due to use of built-in string translation method
-* No additional packages are required
+`python3` is required due to use of built-in string translation and statistics methods.
+
+1. `pip3 install requirements.txt`
+2. `python3 run.py --strict`
+
+results are in `output/results.txt`
+
+passing `--strict` increases match precision:
+
+*  disallows constructing valid `product` `model` names from the `product` `family` name when the `model` name is unacceptable for hashing.
+*  only matches a `listing` if the `product` `manufacturer` matches the `listing` `manufacturer` 
 
 ## Approach
 
@@ -14,7 +22,14 @@ I tried a couple approaches, first a `KMeans` clustering algorithm, and then a s
 
 The `hashing` approach is what has been retained for use with `run.py`, but I left the the generally useful KMeans text clustering class I wrote in `source/cluster.py` (using this this requires you `pip3 install -r source/cluster_requirements.txt`). 
 
+##### Hashing procedure:
 
+1. parse `product.txt` and `listings.txt`, converting and sanitizing any provided JSON keys
+2. hash the `products` into a dictionary keyed by `manufacturer` : `model` , any `products` with un-hashable model names are saved to `unhashed_products.json`
+3. match `listings` into `products`, store any unknown matches by key `unknown`, later dump them to `unmatched_listings.json`
+4. filter out matched, hashed `listings` by `-s` standard deviations from the median, converting costs to a fixed currency at current date using the `CurrencyConverter` library, and dump these outliers to `outlier_listings.json`
+
+---
 
 ### KMeans
 `sci-kit` learn is packed with tools for analyzing data, so I started looking at what tools were available to solve this kind of 'matching' problem.
@@ -56,11 +71,12 @@ Because the `product` data contains strings that should be explicitly present in
 * requires more assertions to function 
 	
 #####Performance
-* the hashing approach matches `99%` of products to `87%` listings. 
-* with `--strict` matching rules (*only match a product to a listing if the `model` is in the listing `title` or if the `manufacturer` matches*): `98%` of products are matched to `82%` of listings.
+* the hashing approach matches `98%` of products to `82%` listings with `-s 2` standard deviations for cost outliers and with `--strict` rules. 
 * runs in well-under 10 seconds on an 8-core machine
 
 ---
+
+Below sections detail the task, objects and caveats of analyzing the data provided.
 
 ### Task
 Generate a file full of `Result` objects which associate each known `Product` to its associated `Listing(s)`. Precision is valued over Recall, but both should be maximized. 

@@ -5,8 +5,6 @@ This class implements a Kmeans text clustering in sklean, it should be used for:
 categorization --> un-labelled data --> known # categories --> >10k samples
 """
 
-import pickle
-
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 
