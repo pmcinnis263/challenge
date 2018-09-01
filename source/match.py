@@ -47,8 +47,7 @@ def match_listings(product_hash, listings, strict=False):
                 if num_model_matches > 1:
                     match_model_key = 'unknown'
 
-                # put this model into the predicted location without added data
-                l.pop('sanitized')
+                # put this model into the predicted location
                 product_hash[manu][match_model_key]['listings'].append(l)
                 pop_list.append(i)
 

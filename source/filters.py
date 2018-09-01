@@ -13,14 +13,14 @@ def cost_filter(products_hash, n_stdevs=2, base_currency='USD'):
     this requires re-visiting each listing 3 times
     - base_currency is what all costs will be converted & compared with
     - n_stdevs is how many standard deviations away from median to filter
+    - expected a converted cost values in key listing: converted : price
 
     removes cost outliers from products_hash
     returns a list of removed outlier listings
     """
 
     # try to get the best currency conversion, but fallback if data missing
-    # @TODO need a solution which has older data, or exclude fallback calcs
-    # ...from removal?
+    # @TODO need a solution which has older data to avoid bad extrapolation
     conv = CurrencyConverter(fallback_on_missing_rate=True,
                              fallback_on_wrong_date=True)
 
@@ -50,7 +50,7 @@ def cost_filter(products_hash, n_stdevs=2, base_currency='USD'):
             # convert costs to same time and currency
             costs = []
             for l in products_hash[manu][model]['listings']:
-                costs.append(conv.convert(l['price'],
+                costs.append(conv.convert(l['converted']['price'],
                              l['currency'], base_currency, date))
 
             # calculate the limits
@@ -63,7 +63,8 @@ def cost_filter(products_hash, n_stdevs=2, base_currency='USD'):
             pop_list = []
             for i, (cost, l) in enumerate(zip(costs,
                 products_hash[manu][model]['listings'])):
-                if l['price'] > max_cost or l['price'] < min_cost:
+                if l['converted']['price'] > max_cost or \
+                   l['converted']['price'] < min_cost:
                     pop_list.append(i)
 
             # pop outlier listings from hashed list

@@ -22,9 +22,11 @@ def sanitize(i):
 
 def parse_json(file_path, sanitize_keys=[], convert_keys=[]):
     """Parses listings file, which is one json object per line
-    keys in loaded json are sanitized if passed to 'sanitize_keys'
-    convert_keys maps keys : types i.e 'str' for type conversion
+    - keys in loaded json are sanitized if passed to 'sanitize_keys'
+        ... sanitized values are put into 'sanitized' key
+    - convert_keys maps keys : types i.e 'str' for type conversion
         ... format is [ (key1, type1), (key2, type2), .. ]
+        ... puts the converted objects into 'converted' key
     """
 
     # assert file exists
@@ -47,10 +49,12 @@ def parse_json(file_path, sanitize_keys=[], convert_keys=[]):
 
         # convert types key1 : str(), key2 : int(), etc...
         if convert_keys:
+            json_line['converted'] = {}
+
             for k, ty in convert_keys:
                 assert(k in json_line), "{0} not found in {1}, "\
                     "cannot sanitize".format(k, file_path)
-                json_line[k] = ty(json_line[k])
+                json_line['converted'][k] = ty(json_line[k])
 
         list_of_json.append(json_line)
 
@@ -168,6 +172,13 @@ def writeout_results(results, results_output_path,
             for model in results[manu]:
                 if model == 'unknown':
                     continue
+
+                # @TODO would like to avoid this final loop through listings:
+                # ... need to do this for results.txt validity
+                for l in results[manu][model]['listings']:
+                    l.pop('converted')
+                    l.pop('sanitized')
+
                 outf.write(json.dumps({"product_name":
                            results[manu][model]['product']['product_name'],
                            "listings": results[manu][model]['listings']},
