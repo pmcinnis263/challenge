@@ -20,7 +20,7 @@ passing `--strict` increases match precision:
 
 I tried a couple approaches, first a `KMeans` clustering algorithm, and then a simpler (but more robust) `hashing` method. 
 
-The `hashing` approach is what has been retained for use with `run.py`, but I left the the generally useful KMeans text clustering class I wrote in `source/cluster.py` (using this this requires you `pip3 install -r source/cluster_requirements.txt`). 
+The `hashing` approach is what has been retained for use with `run.py`, but I left the the generally useful KMeans text clustering class I wrote in `source/cluster.py` (using this this requires you `pip3 install -r source/kmeans_requirements.txt`). 
 
 ##### Hashing procedure:
 
@@ -40,18 +40,18 @@ The `hashing` approach is what has been retained for use with `run.py`, but I le
 
 * Existing text analysis and comparison work pointed me towards clustering `Listings` by text contents using a [TF-IDF feature](https://pythonprogramminglanguage.com/kmeans-text-clustering/) of the `title` field
 
-#####Upsides:
+##### Upsides:
 * can reduce the search-size of an even greater number of more varied listings (i.e not just imaging products as provided)
 * model converges well on listing `title` data
 * can estimate similarity between listings even if the similarity would be complex to express via direct string operations
 
-#####Downsides:
+##### Downsides:
 * `~80%` of the top `15` words in each cluster centroid do not contain desired manufacturer or model keywords, making it challenging to associate products to clusters
 * the model is sensitive to the language of the text, and with data that is mostly english, it is more challenging to produce accurate predictions for all listings. 
 * it is non-trivial to cluster by text data alongside cost, date, etc.
 * Products don't have enough text data to make an accurate cluster prediction to match them
 
-#####Performance
+##### Performance
 * when clustering by the number of products, and using listing `titles` as text features, `Kmeans` is able to match `9%` of `products` to `%20` of `listings`. 
 * model fitting takes approximately 10 seconds on an 8-core machine
 * there are many `listings` that do not contain the `model` or `manufacturer` strings in the matched `product`.
@@ -59,12 +59,12 @@ The `hashing` approach is what has been retained for use with `run.py`, but I le
 ### Hashing
 Because the `product` data contains strings that should be explicitly present in associated `Listings`, I decided to try a hashing approach where I build a `dict()` keyed by `manufacturer` and `model`. 
 
-#####Upsides:
+##### Upsides:
 * much faster than KMeans
 * is not very language specific, since the model name and manufacturer do not change significantly across languages.
 * performing operations on a dict hashed by manufacturer and model minimizes the number of comparison operations required
 
-#####Downsides:
+##### Downsides:
 * hashing short `model` or `manufacturer` strings (ex: `hp`) leads to an increase in false-positive `listing`-`product` matches
 * requires programmer time to develop the string comparison and sanitization 
 * has many edge-cases in the formation of the product hash
